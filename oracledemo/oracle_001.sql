@@ -86,5 +86,147 @@ FROM jobs;
 SELECT salary, salary * 10 AS "b o n u s"
 FROM employees;
 
+-- 컬럼명들을 하나의 문장처럼 출력할 때 결합연산자(||)를 사용한다.
 SELECT last_name || '님의 연봉은 ' || salary || ' 입니다.' AS data
 FROM employees;
+
+-- distinct은 중복제거를 한 후 출력해주는 명령어이다.
+SELECT distinct first_name
+FROM employees;
+
+SELECT distinct first_name, last_name
+FROM employees;
+
+-- SELECT 입력순서
+SELECT 컬럼명, 컬럼명
+FROM 테이블명
+WHERE 컬럼명 = '값'
+GROUP BY 컬럼명
+HAVING 컬럼명 = '값'
+ORDER BY 컬럼명 desc; -- 정렬 , asc 오름차순 (생략하는 경우가 많다) desc 내림차순
+
+-- SELECT 해석순서
+FROM 테이블명
+WHERE 컬럼명 = '값'
+GROUP BY 컬럼명
+HAVING 컬럼명 = '값'
+SELECT 컬럼명, 컬럼명
+ORDER BY 컬럼명 desc;
+
+-- employees테이블에서 salary이 3000미만일 때의 first_name, salary을 출력하라.
+SELECT first_name, salary
+FROM employees
+WHERE salary < 3000; -- 조건문으로 True or False 를 반환한다.
+
+-- employees테이블에서 first_name컬럼의 값이 'David' 일때의 --first_name, salary을 출력하시오.
+SELECT first_name, salary
+FROM employees
+WHERE first_name = 'David'; -- 문자열은 무조건 홑따옴표, 대소문자 구분에 유의한다.
+
+-- employees테이블에서 first_name컬럼의 값이 'David'가 아닐때의 --first_name, salary을 출력하시오.
+SELECT first_name, salary
+FROM employees
+WHERE first_name != 'David'; -- 문자열은 무조건 홑따옴표, 대소문자 구분에 유의한다.
+
+SELECT first_name, salary
+FROM employees
+WHERE first_name <> 'David'; -- 오라클에서 제공하는 연산자 <> : 다르다 (!=)와 같다.
+
+-- employees테이블에서 salary이 3000, 9000, 17000일 때 first_name, hire_date, salary를 출력하라.
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE salary = 3000 or salary = 9000 or salary = 17000;
+
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE salary in (3000,9000,17000); -- 같은 칼럼내에서 비교할때 in 연산자를 사용한다.
+
+-- employees 테이블에서 salary이 3000부터 5000까지 일때의 first_name hire_date, salary을 출력하라.
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE salary >= 3000 or salary <= 5000;
+
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE salary between 3000 and 5000;
+
+-- employees테이블에서 job_id가 'IT_PROG'이 아닐때
+-- first_name, email, job_id을 출력하라.
+SELECT first_name, email, job_id
+FROM employees
+WHERE job_id <> 'IT_PROG';
+
+SELECT first_name, email, job_id
+FROM employees
+WHERE job_id != 'IT_PROG';
+
+SELECT first_name, email, job_id
+FROM employees
+WHERE not (job_id = 'IT_PROG');
+
+-- employees 테이블에서 salary이 3000부터 5000까지의 수가 아닐 때의 first_name hire_date, salary을 출력하라.
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE not(salary >= 3000 AND salary <= 5000);
+
+SELECT first_name, hire_date, salary
+FROM employees
+WHERE salary not between 3000 and 5000;
+
+-- employees 테이블에서 commission_pct null일 때 first_name, salary, commission_pct을 출력하라.
+SELECT first_name, salary, commission_pct
+FROM employees
+WHERE commission_pct is null; -- is 연산자를 사용한다.
+
+-- employees 테이블에서 commission_pct null이 아닐 때 first_name, salary, commission_pct을 출력하라.
+SELECT first_name, salary, commission_pct
+FROM employees
+WHERE commission_pct is not null;
+
+-- employees 테이블에서 first_name에 'der'이 포함이된  first_name, salary, email을 출력하라.
+SELECT first_name, salary, email
+FROM employees
+WHERE  first_name like '%der%'; -- 일부 문자열이 포함이 된 값을 찾기 위해서는 like연산자를 사용하고 % 와일드카드를 사용한다.
+
+-- employees 테이블에서 first_name의 값중 A로 시작하고 두번째문자는 임의의 문자이며 exander로 끝나는 first_name, salary, email을 출력하라.
+SELECT first_name, salary, email
+FROM employees
+WHERE first_name like 'A_exander'; -- 임의의 문자를 의미하는 와일드카드는 _ 이다.
+
+/*
+WHERE 절에서 사용된 연산자 3가지 종류
+1 비교연산자 : = > >= < <= != <> ^=, NOT 컬럼명 =
+2 SQL연산자 : BETWEEN a AND b, IN, LIKE, IS NULL
+3 논리연산자 : AND, OR, NOT
+
+우선순위
+1 괄호()
+2 not연산자
+3 비교연산자, SQL연산자
+4 AND
+5 OR
+ */
+
+-- employees 테이블에서 job_id를 오름차순으로 first_name, email, job_id를 출력하시오
+SELECT first_name, email, job_id
+FROM employees
+ORDER BY job_id asc;
+
+
+-- employees 테이블에서 department_id를 오름차순으로 first_name을 내림차순으로 department_id, first_name, salary를 출력하시오
+SELECT department_id, first_name, salary
+FROM employees
+ORDER BY department_id asc, first_name desc; -- 각 절에서 여러개를 나열할 때 , 으로 구분한다.
+
+-- employees 테이블에서 최근 입사 순으로 first_name, salary, hire_date를 출력하시오
+SELECT first_name, salary, hire_date
+FROM employees
+ORDER BY hire_date desc;
+
+-- employees 테이블에서 직업(job_id)이 'FI_ACCOUNT'인 사원들의 연봉(salary)이 높은 순으로 first_name, job_id, salary를 출력하시오
+SELECT first_name, job_id, salary
+FROM employees
+WHERE job_id = 'FI_ACCOUNT'
+ORDER BY salary desc;
+
+
