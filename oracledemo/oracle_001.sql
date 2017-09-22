@@ -492,8 +492,210 @@ FROM dual; -- 리턴  2017-09-22 18:06:29 금
 SELECT to_char(sysdate, 'yyyy-mon-dd hh24:mi:ss dy')
 FROM dual; -- 리턴  2017-9월 -22 18:07:00 금
 
+----------------------------------------
+to_number()
+문자 -> 숫자
+----------------------------------------
+SELECT to_number('253')
+FROM dual;
+
+----------------------------------------
+to_date()
+문자 -> 날짜
+----------------------------------------
+SELECT to_date('2013-10-14')
+FROM dual;
+
+-- hire_date(입사일)을 이용해서 '홍길동님은 2003년 1월 3일에 입사했습니다'로 출력하는 query를 작성하시오.
+SELECT first_name || '님은 ' 
+		|| to_char(hire_date, 'yyyy') || '년' 
+		|| ltrim(to_char(hire_date,'mm'),'0') ||'월'
+		|| ltrim(to_char(hire_date,'dd'),'0') ||'일에 입사했습니다.'
+FROM employees;
+
+----------------------------------------
+일반함수
+nvl()
+----------------------------------------
+-- nvl(컬럼, 대체값) : 첫번째 인자 값이 null이면 0으로 대체해서 출력한다.
+-- 대체할 값이 숫자이면 두번째 인자값에 숫자를 지정한다.
+-- 대체할 값이 믄자이면 두번째 인자값에 문자를 지정한다.
+-- 대체할 값이 날짜이면 두번째 인자값에 날짜를 지정한다.
+
+-- commission_pct 컬럼의 값이 null인 경우 0으로 대체해서 출력한다.
+SELECT first_name, commission_pct, nvl(commission_pct,0)
+FROM employees;
+
+SELECT first_name, manager_id, nvl(to_char(manager_id),'CEO') -- 칼럼의 값을 문자열로 변환한 후에 문자열을 저장할 수 있다.
+FROM employees;
+
+-- nvl2(컬럼, 대체1, 대체2) : 컬럼의 값이 null 아니면 대체 1로, null 이면 대체 2로 출력한다.
+SELECT commission_pct, nvl2(commission_pct, commission_pct, -1)
+FROM employees;
+
+----------------------------------------
+일반함수
+decode()
+----------------------------------------
+-- decode(컬럼, 조건1, 값1, 조건2, 값2, 조건3, 값3, 그밖의 값)
+-- department_id값이 10이면 'AA', 20이면 'BB', 30이면 'CC' 그밖의 값은 'DD'
+-- 자바의 다중 if~else 제어문과 비슷하다.
+SELECT first_name, department_id, decode(department_id, 10, 'AA', 20, 'BB', 30, 'CC', 'DD') as code
+FROM employees;
+
+----------------------------------------
+일반함수
+case()
+----------------------------------------
+case when 조건 1 then 결과 1
+	 when 조건 2 then 결과 2
+	 when 조건 3 then 결과 3
+	 else 결과n
+end
+-- java의 switch~case 문과 비슷
+
+SELECT first_name, department_id,
+	case when department_id = 10 then 'AA'
+		 when department_id = 20 then 'BB'
+		 when department_id = 30 then 'CC'
+	else 'DD'
+	end as code
+FROM employees;
+
+-- 입사일에서 월이 1-3이면 '1사분기', 4-6이면 '2사분기', 7-9이면 '3사분기', 10-12이면 '4사분기'로 처리를 하고 사원명(first_name), 입사일(hire_date), 분기로 출력하시오.
+SELECT first_name, hire_date, 
+	case when to_char(hire_date,'mm') <= 3 then '1사분기'
+		 when to_char(hire_date,'mm') <= 6 then '2사분기'
+		 when to_char(hire_date,'mm') <= 9 then '3사분기'
+		 when to_char(hire_date,'mm') <= 12 then '4사분기'
+	end as "분기"
+FROM employees;
+
+----------------------------------------
+그룹 함수(집합 함수)
+----------------------------------------
+-- max(컬럼) : 최대값
+SELECT max(salary)
+FROM employees;
+
+-- min(컬럼) : 최소값
+SELECT min(salary)
+FROM employees;
+
+-- count(컬럼) : 개수 
+SELECT count(commission_pct) -- null 값을 가지고 있는 칼럼은 세지 않는다.
+FROM employees;
+
+SELECT count(employee_id) -- null 값이 없어서 모든 칼럼의 개수를 센다.
+FROM employees;
+
+SELECT count(*) -- null 값 소유 여부와 상관없이 모든 칼럼의 개수를 센다.
+FROM employees;
+
+-- sum(컬럼) : 합계
+SELECT sum(salary)
+FROM employees;
+
+-- avg(컬럼) : 평균
+SELECT avg(salary)
+FROM employees;
 
 
+-- 그룹 함수와 단순 컬럼은 함께 사용할 수 없다.(출력되는 레코드 수가 다르기 때문이다.)
+SELECT first_name, count(*) -- ORA-00937: 단일 그룹의 그룹 함수가 아닙니다
+FROM employees;
 
+-- 그룹함수와 단순 컬럼을 사용하기 위해서는 단순컬럼을 그룹화 해야한다.(GROUP BY)
+SELECT department_id, count(*)
+FROM employees
+GROUP BY department_id
+ORDER BY department_id;
 
+SELECT first_name, count(*) -- 의미가 없는 그룹핑
+FROM employees
+GROUP BY first_name
+ORDER BY first_name;
+
+-- 50이하인 부서에 대해서 NULL이 아닌 부서별의 직원수를 출력하시오.
+SELECT department_id, count(*)
+FROM employees
+WHERE department_id is not null -- 단순 컬럼에 대한 조건절 -- 그룹함수는 WHERE절에서 사용 할 수 없다.
+GROUP BY department_id
+HAVING department_id <= 50 -- GROUP BY 에 대한 조건절 (HAVING)
+ORDER BY department_id;
+
+-- 부서별 최소연봉, 최대연봉을 출력하시오.(부서별 오름차순)
+SELECT department_id, min(salary), max(salary)
+FROM employees
+GROUP BY department_id
+ORDER BY department_id;
+
+-- 직업별(job_id) 연봉 합계를 출력하시오.
+SELECT job_id, sum(salary)
+FROM employees
+GROUP BY job_id
+ORDER BY job_id;
+
+------------------------------
+문제
+------------------------------
+1) 모든사원에게는 상관(Manager)이 있다. 하지만 employees테이블에 유일하게 상관이
+   없는 로우가 있는데 그 사원(CEO)의 manager_id 컬럼값이 NULL이다. 상관이 없는 사원을
+   출력하되 manager_id 컬럼값 NULL 대신 CEO로 출력하시오.
+   
+   SELECT manager_id, nvl(to_char(manager_id), 'CEO')
+   FROM employees;
+   
+2) 가장최근에 입사한 사원의 입사일과 가장오래된 사원의 입사일을 구하시오.
+   SELECT job_id, min(hire_date), max(hire_date)
+   FROM employees
+   GROUP BY job_id;
+ 
+3) 부서별로 커미션을 받는 사원의 수를 구하시오.
+  SELECT count(commission_pct)
+  FROM employees;
+   
+4) 부서별 최대연봉이 10000이상인 부서만 출력하시오.   
+  SELECT department_id, max(salary)
+  FROM employees
+  GROUP BY department_id
+  HAVING max(salary) >= 10000;
+  
+5) employees 테이블에서 직종이 'IT_PROG'인 사원들의 연봉평균을 구하는 SELECT문장을 기술하시오
+   SELECT job_id, avg(salary)
+   FROM employees
+   WHERE job_id = 'IT_PROG'
+   GROUP BY job_id;
+
+6) employees 테이블에서 직종이 'FI_ACCOUNT' 또는 'AC_ACCOUNT' 인 사원들 중 최대연봉을  구하는    SELECT문장을 기술하시오   
+   SELECT job_id, max(salary)
+   FROM employees
+   WHERE job_id = 'FI_ACCOUNT' or job_id = 'AC_ACCOUNT'
+   GROUP BY job_id;
+
+7) employees 테이블에서 50부서의 최소연봉를 출력하는 SELECT문장을 기술하시오
+   SELECT department_id, min(salary)
+   FROM employees
+   WHERE department_id = '50'
+   GROUP BY department_id;
+    
+8) employees 테이블에서 아래의 결과처럼 입사인원을 출력하는 SELECT문장을 작성하여라
+   <출력:  1987		1989		1990
+   	   2             1               1   >
+   SELECT count(*) AS 1987, count(*) AS 1989, count(*) AS 1990
+   FROM employees
+   GROUP BY hire_date
+   HAVING case
+	  to_char(hire_date, 'yyyy') = 1987 then count(to_char(hire_date, 'yyyy'))
+	  to_char(hire_date, 'yyyy') = 1989 then count(to_char(hire_date, 'yyyy'))
+	  to_char(hire_date, 'yyyy') = 1990 then count(to_char(hire_date, 'yyyy'))
+   end 
+  
+9) employees 테이블에서 각 부서별 인원이 10명 이상인 부서의 부서코드,
+  인원수,연봉의 합을 구하는  SELECT문장을 작성하여라
+   SELECT department_id, count(department_id), sum(salary)
+   FROM employees
+   GROUP BY department_id
+   HAVING count(department_id) >= 10;
+   
 
