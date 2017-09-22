@@ -230,3 +230,270 @@ WHERE job_id = 'FI_ACCOUNT'
 ORDER BY salary desc;
 
 
+========================================
+
+집합연산자
+ - 둘 이상의 query결과를 하나의 결과로 조합한다.
+ - select의 인자 갯수가 같아야한다. select가 2개이면 두번째 select도 2개여야 한다.
+ - 타입이 일치해야 한다.. 에를 들어 character이면 character이여야 한다.
+ 
+집합연산자 종류
+ union(합집합) - 중복행이 제거된 두 query
+ union all(합집합) - 중복행이 포함된 두 query
+ intersect(교집합) - 두 query에 공통적인 행
+ minus(차집합) - 첫번째 query에 있는 행 중 두번째 query에 없는 행 표시
+ 
+집합연산자 사용이유
+ - 서로 다른 테이블에서 유사한 형태의 결과를 반환하기 위해서
+ - 서로 같은 테이블에서 서로 다른 질의를 수행하여 결과를 합치기 위해서
+ 
+========================================================
+
+-- union(합집합)
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 40
+union
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 60;
+
+-- intersect(교집합)
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 40
+intersect
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 60;
+
+-- minus(차집합)
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 40
+minus
+SELECT department_id, first_name, last_name
+FROM employees
+WHERE department_id = 20 or department_id = 60;
+
+======================================================
+SQL (Structured Query Language) 함수
+1. 단일행 함수: 행 하나당 하나의 결과를 출력한다.
+			(문자 함수, 숫자 함수, 날짜 함수, 변환 함수, 일반 함수)
+2. 복수행 함수: 행 여러개당 하나의 결과를 출력한다.
+			(합계, 평균, 최대, 최소, 갯수)
+======================================================
+
+-- select문에서는 반드시 테이블 명을 명시해야한다.
+-- 하지만 select절에 식이나 특정 함수를 이용해서 결과값을 가져올때 사용 할 수 있는 dual이라는 테이블을 제공하고 있다.
+
+SELECT 3+2
+FROM dual;
+
+SELECT sysdate
+FROM dual;
+
+SELECT sysdate, 3+2
+FROM dual;
+
+-- 문자 함수
+-- 단어의 첫글자만 대문자로 변경해주는 함수이다.
+SELECT initcap('korea hello')
+FROM dual;
+
+SELECT upper('korea')
+FROM dual;
+
+SELECT 	first_name, upper(first_name),
+		last_name, upper(last_name)
+FROM employees;
+-- SELECT 명령어와 함께 실행할 시에 데이터의 변경은 이루어지지 않는다.
+
+-- 모든 문자를 소문자로 변경해주는 함수이다.
+SELECT lower('KOREA')
+FROM dual;
+
+SELECT	first_name, lower(first_name)
+		last_name, lower(last_name)
+FROM employees;
+
+-- employees 테이블에서 first_name에서 대소문자 구분없이 'Ja'가 포함이 된 first_name, salary를 출력하라.
+SELECT first_name, salary
+FROM employees
+WHERE lower(first_name) like lower('%Ja%');
+
+-- 문자의 길이를 리턴해주는 함수이다.
+SELECT length('korea')
+FROM dual;
+
+SELECT length('한국')
+FROM dual;
+
+-- 문자의 길이를 바이트로 구해서 리턴해주는 함수이다.
+SELECT lengthb('korea') -- 함수 뒤에 b가 붙으면 byte를 의미한다.
+FROM dual;
+
+SELECT lengthb('한국')
+FROM dual;
+
+CREATE TABLE user1(
+	data varchar2(5)
+);
+
+INSERT INTO user1(data)
+VALUES('korea');
+
+INSERT INTO user1(data)
+VALUES('한국'); -- ORA-12899: "HR"."USER1"."DATA" 열에 대한 값이 너무 큼(실제: 6, 최대값: 5)
+-- 한글은 글자 하나당 3바이트를 차지한다.
+
+SELECT *
+FROM user1;
+
+-- 특정범위의 문자를 추출 해주는 함수이다.
+-- substr('문자위치', 시작위치, 갯수)
+SELECT substr('oracle test', 2, 4) -- 오라클에서는 인덱스가 1부터 시작한다.
+FROM dual;
+
+SELECT substr('오라클 테스트', 4, 4) -- 갯수에 공백도 포함이 된다.
+FROM dual;
+
+SELECT substrb('oracle test', 2, 4)
+FROM dual;
+
+SELECT substrb('오라클 테스트', 4, 4) -- 해당 범위내 바이트에서 완전하게 표현할 수 있는 문자만 표시가 된다.
+FROM dual;
+
+-- 특정 문자의 인덱스를 추출해주는 함수이다.
+SELECT instr('korea', 'or') -- 2 리턴
+FROM dual;
+
+SELECT instr('한국자바', '자') -- 3 리턴
+FROM dual;
+
+-- 특정문자의 바이트 인덱스를 추출해주는 함수이다.
+SELECT instrb('korea', 'or') -- 2 리턴
+FROM dual;
+
+SELECT instrb('한국자바', '자') -- 7 리턴
+FROM dual;
+
+-- 주어진 문자열에서 왼쪽으로 특정 문자를 채우는 함수이다.
+SELECT lpad('korea', 8, '*')
+FROM dual;
+
+-- 주어진 문자열에서 오른쪽으로 특정 문자를 채우는 함수이다.
+SELECT rpad('korea', 8, '*')
+FROM dual;
+
+-- 주어진 문자열에서 왼쪽의 특정 문자를 삭제하는 함수이다.
+SELECT ltrim('***korea', '*')
+FROM dual;
+
+-- 주어진 문자열에서 오른쪽의 특정 문자를 삭제하는 함수이다.
+SELECT rtrim('korea***', '*')
+FROM dual;
+
+-- 주어진 문자열에서 특정문자를 다른 문자로 변경해주는 함수이다.
+SELECT replace('oracle test', 'test', 'sample')
+FROM dual;
+
+--------------------------------------
+숫자함수
+--------------------------------------
+
+-- 3.55을 소수점 1의 자리까지 구하시오(반올림)
+SELECT round(3.55, 1)
+FROM dual;
+
+-- 2535.598을 십의 자리까지 구하시오(반올림)	
+SELECT round(2535.598, -1)
+FROM dual;
+
+-- 256.78을 무조건 올림한다. (올림)
+SELECT ceil(256.78) -- 자리수 지정 없음
+FROM dual;
+
+-- 289.78에서 소수 이하는 무조건 버린다.(버림)
+SELECT floor(289.78) -- 자리수 지정 없음
+FROM dual;
+
+-- 2의 3승 (거듭제곱)
+SELECT power(2, 3)
+FROM dual;
+
+-- 25의 제곱근
+SELECT sqrt(25)
+FROM dual;
+
+-- 나머지
+SELECT mod(10, 3)
+FROM dual;
+
+----------------------------------------
+날짜함수
+----------------------------------------
+
+-- 현재 시스템에서 제공해주는 오늘의 날짜 구하는 함수
+SELECT sysdate -- 2017-09-22
+FROM dual;
+
+-- 첫번째 인자의 달에 두번째 인자값을 더한 날짜를 반환
+SELECT add_months(sysdate, 10) -- 2018-07-22
+FROM dual;
+
+-- 두 날짜 월의 차를 반환. 앞에 있는 값이 크면 +로 리턴하고 반대이면 -로 리턴
+SELECT months_between('2013-01-01', '2013-09-30') -- - 리턴
+FROM dual;
+
+-- 첫번째 인자를 기준으로 앞으로 다가올 날짜를 두번째에서 지정한 요일의 날짜를 구함
+SELECT next_day(sysdate, '일요일') -- 2017-09-24
+FROM dual;
+
+-- 현재 날짜를 기준으로 달의 마지막 일을 구함
+SELECT last_day(sysdate) -- 2017-09-30
+FROM dual;
+
+숫자		->		문자		<-		날짜
+	to_char()			to_char()
+
+숫자		<-		문자		->		날짜
+	to_number()			to_date()
+
+--------------------------
+to_char()
+1 숫자->문자
+2 날짜->문자
+--------------------------
+
+-- 숫자 -> 문자
+-- 첫번째 인자값을 두번째 인자값의 형식으로 변환해주는 함수
+SELECT to_char(2532, '999,999.99')
+FROM dual; -- 리턴     2,532.00
+
+SELECT to_char(2532, '009,999.00')
+FROM dual; -- 리턴  002,532.00
+-- 인자값의 형식이 '9'일때와 '0'일때의 결과값이 다르다.
+
+-- 각 나라의 통화를 표현해 줄 때 L기호를 사용한다.
+SELECT to_char(2532, 'L999,999.99')
+FROM dual; -- 리턴           ￦2,532.00
+
+-- 날짜 -> 문자
+SELECT to_char(sysdate, 'yyyy-mm-dd hh:mi:ss day')
+FROM dual; -- 리턴  2017-09-22 06:04:51 금요일
+
+SELECT to_char(sysdate, 'yyyy-mm-dd hh:mi:ss dy')
+FROM dual; -- 리턴  2017-09-22 06:05:33 금
+
+SELECT to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss dy')
+FROM dual; -- 리턴  2017-09-22 18:06:29 금
+
+SELECT to_char(sysdate, 'yyyy-mon-dd hh24:mi:ss dy')
+FROM dual; -- 리턴  2017-9월 -22 18:07:00 금
+
+
+
+
+
+
