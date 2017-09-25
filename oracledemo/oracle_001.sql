@@ -682,14 +682,11 @@ ORDER BY job_id;
 8) employees 테이블에서 아래의 결과처럼 입사인원을 출력하는 SELECT문장을 작성하여라
    <출력:  1987		1989		1990
    	   2             1               1   >
-   SELECT count(*) AS 1987, count(*) AS 1989, count(*) AS 1990
-   FROM employees
-   GROUP BY hire_date
-   HAVING case
-	  to_char(hire_date, 'yyyy') = 1987 then count(to_char(hire_date, 'yyyy'))
-	  to_char(hire_date, 'yyyy') = 1989 then count(to_char(hire_date, 'yyyy'))
-	  to_char(hire_date, 'yyyy') = 1990 then count(to_char(hire_date, 'yyyy'))
-   end 
+ 		   
+  SELECT sum(decode(to_char(hire_date, 'yyyy'), '1987',1,0)) as "1987",
+         sum(decode(to_char(hire_date, 'yyyy'), '1989',1,0)) as "1989",
+         sum(decode(to_char(hire_date, 'yyyy'), '1990',1,0)) as "1990" 
+  FROM employees;
   
 9) employees 테이블에서 각 부서별 인원이 10명 이상인 부서의 부서코드,
   인원수,연봉의 합을 구하는  SELECT문장을 작성하여라
