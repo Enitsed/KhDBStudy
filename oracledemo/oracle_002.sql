@@ -214,9 +214,102 @@ UPDATE문의 SET, CREATE문
           메인쿼리의 조건절에 여러 컬럼을 동시에 비교할 수 있다. 
 	  서브쿼리와 메인쿼리에서 비교하고자 하는 컬럼 갯수와 컬럼의 위치가 동일해야 한다.
 --------------------------------------------------------------- 
+-- Lex가 근무하는 부서명을 출력하시오.
+SELECT department_id
+FROM employees
+WHERE first_name = 'Lex';
 
+SELECT department_name
+FROM departments
+WHERE department_id = 90;
 
+SELECT d.department_name
+FROM employees e, departments d
+WHERE e.department_id = d.department_id
+AND e.first_name = 'Lex';
 
+SELECT department_name
+FROM departments
+WHERE department_id = (SELECT department_id FROM employees WHERE first_name = 'Lex');
+
+-- Lex와 같은 부서에 근무하는 사원이름과 부서번호를 출력하시오.
+SELECT first_name, department_id
+FROM employees
+WHERE department_id = (SELECT department_id FROM employees WHERE first_name = 'Lex');
+
+-- 'Lex'와 동일한 직업(job_id)을 가진 사원의 이름(first_name), 직업(job_title), 입사일(hire_date)을 출력하시오.
+SELECT e.first_name, j.job_title, e.hire_date
+FROM employees e, jobs j
+WHERE j.job_id = e.job_id
+AND e.job_id = (SELECT job_id FROM employees WHERE first_name = 'Lex');
+
+-- 'IT'에 근무하는 사원의 이름, 부서 번호를 출력하시오.
+SELECT first_name, department_id
+FROM employees
+WHERE department_id = (SELECT department_id FROM departments WHERE department_name = 'IT');
+
+-- 'Bruce'보다 연봉을 많이 받은 사원이름(first_name), 부서명을 출력하시오.
+SELECT e.first_name, d.department_name
+FROM employees e, departments d
+WHERE e.department_id = d.department_id
+AND e.salary > (SELECT salary FROM employees WHERE first_name = 'Bruce');
+
+-- Steven과 같은 부서에서 근무하는 사원의 이름, 연봉, 입사일을 출력하시오.(in)
+SELECT first_name, salary, hire_date
+FROM employees
+WHERE department_id in (SELECT department_id FROM employees WHERE first_name = 'Steven'); -- first_name에 중복된 값이 있기 때문에 행이 여러개 리턴, 따라서 비교연산자를 사용할 수 없다.
+
+-- 부서별로 가장 연봉을 많이 받는 사원의 이름, 연봉, 부서번호를 출력하시오.(in)
+SELECT first_name, salary, department_id
+FROM employees
+WHERE (department_id, salary) in (SELECT department_id, max(salary) FROM employees GROUP BY department_id)
+ORDER BY department_id;
+
+-- 30 소속된 사원들 중에서 연봉을 가장 많이 받는 사원보다 더 많은 연봉을 받는 사원의 이름, 연봉, 입사일을 출력하시오.(all)
+-- (서브쿼리에서 max()함수를 사용하지 않는다.)
+SELECT first_name, salary, hire_date
+FROM employees
+WHERE salary > all (SELECT salary FROM employees WHERE department_id = 30);
+
+-- 부서번호가 30번인 사원들이 받는 최저급여보다 높은 연봉을 받는 사원의 이름, 연봉, 입사일을 출력하시오.(any)
+-- (서브쿼리에서 min()함수를 사용하지 않는다.)
+SELECT first_name, salary, hire_date
+FROM employees
+WHERE salary > any (SELECT salary FROM employees WHERE department_id = 30);
+
+-- 20번 부서에 속한 사원이 있으면 사원들의 사원명, 입사일, 연봉, 부서번호를 출력하시오(exists)
+SELECT first_name, hire_date, salary, department_id
+FROM employees
+WHERE exists (SELECT department_id FROM employees WHERE department_id = 20);
+
+----------------------------------------------------------------------------------------------------------------
+Top-N 서브쿼리 (FROM 절에서 사용. 가상테이블이라 부르기도 함)
+	상위의 값을 추출할 때 사용한다.
+	<, <= 연산자를 사용할 수 있다. 단 비교되는 값이 1일때는 =도 가능하다.
+	order by 절을 사용할 수 있다. -- WHERE 절의 서브쿼리에서는 사용 불가
+----------------------------------------------------------------------------------------------------------------
+
+-- 연봉이 가장 높은 상위 3명을 검색하시오. (인라인 뷰)
+SELECT rownum , a.* -- a.* : 가상의 테이블 a에 있는 모든 칼럼을 호출한다. rownum : 오라클에서 제공하는 가상 칼럼이다.
+FROM (SELECT first_name, salary FROM employees ORDER BY salary desc) a
+WHERE rownum <= 3; -- >, >= 은 사용할 수 없다. = 연산자는 비교되는 값이 1 일때만 사용할 수 있다.
+
+-- 연봉이 가장 높은 상위 4위부터 8위까지 검색하시오.
+SELECT b.*
+FROM (SELECT rownum rm, a.* 
+		FROM (SELECT first_name, salary 
+				FROM employees 
+				ORDER BY salary desc) a) b
+WHERE b.rm >= 4 and b.rm <= 8;
+
+-- 월별 입사자 수를 조회하되 입사자수가 가장 많은 상위 3개의 달만 출력되도록 하시오.
+-- <출력 : 월	입사자수>
+SELECT a.*
+FROM (SELECT to_char(hire_date, 'mm') AS "월", count(to_char(hire_date, 'mm')) AS "입사자수"
+		FROM employees 
+		GROUP BY to_char(hire_date, 'mm') 
+		ORDER BY count(to_char(hire_date, 'mm')) desc) a
+WHERE rownum <= 3;
 
 
 

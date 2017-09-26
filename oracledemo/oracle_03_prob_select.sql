@@ -65,6 +65,5 @@ AND commission_pct is not null;
 9)각 부서의 최소연봉이 20번 부서의 최소연봉보다 많은 부서의 번호와 그부서의 최소연봉를 출력하시오.
 SELECT department_id, min(salary)
 FROM employees
-WHERE (SELECT min(salary) FROM employees) > (SELECT min(salary) FROM employees WHERE department_id = 20)
-GROUP BY department_id;
-    
+GROUP BY department_id
+HAVING min(salary) > (SELECT min(salary) FROM employees WHERE department_id = 20);
