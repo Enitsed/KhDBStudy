@@ -309,7 +309,77 @@ FROM (SELECT to_char(hire_date, 'mm') AS "월", count(to_char(hire_date, 'mm')) 
 		FROM employees 
 		GROUP BY to_char(hire_date, 'mm') 
 		ORDER BY count(to_char(hire_date, 'mm')) desc) a
-WHERE rownum <= 3;
+WHERE rownum <= 3
+ORDER BY 월;
+
+------------------------------------
+컬럼이나 행의 갯수에 따라서
+ 1. 단일 행 서브쿼리
+ 2. 다중 행 서브쿼리
+ 3. 단일 컬럼 서브쿼리
+ 4. 다중 컬럼 서브커리
+ -----------------------------------
+ 상관관계 서브쿼리
+ : 서브쿼리에서 메인쿼리의 컬럼을 참조한다.(메인쿼리를 먼저수행한다.)
+   서브쿼리는 메인쿼리 각각의 행에 대해서 순서적으로 한번씩 실행한다.
+ <아래 쿼리 처리순서>
+ 1st : 바깥쪽 쿼리의 첫째 row 에 대하여 
+ 2nd : 안쪽 쿼리에서 자신의 속해있는 부서의 MAX salalary 과 비교하여 true 이면 
+       바깥의 컬럼값을 반환하고 , false 이면 값을 버린다. 
+ 3rd : 바깥쪽 쿼리의 두 번째 row 에 대하여 마찬가지로 실행하며, 
+       이렇게 바깥쪽 쿼리의 마지막 row 까지 실행한다. 
+ ---------------------------------
+ --부서별 최고 연봉을 받는 사원을 출력하시오.
+/* 6 */ SELECT first_name, salary, department_id
+/* 1 */ FROM employees e
+/* 5 */ WHERE salary= (
+/* 4 */					SELECT max(salary) 
+/* 2 */ 				FROM employees 
+/* 3 */ 				WHERE department_id=e.department_id)
+/* 7 */ ORDER BY department_id;
+
+-- 부서명에 IT가 포함이 된 사람이 속한 사원명(first_name), 부서번호(department_id), 부서명(department_name)을 출력하시오.(in)
+SELECT e.first_name, e.department_id, d.department_name
+FROM employees e, departments d
+WHERE e.department_id = d.department_id
+AND d.department_id in (SELECT department_id FROM departments WHERE department_name LIKE '%IT%');
+
+-- Toronto 도시에 근무하는 사원들보다 많은 연봉을 받는 first_name, city, salary, department_name 을 출력하시오 (any)
+-- Toronto은 제외한다.
+SELECT e.first_name, l.city, e.salary
+FROM employees e, departments d, locations l
+WHERE e.department_id = d.department_id
+AND d.location_id = l.location_id
+AND l.city != 'Toronto'
+AND e.salary > any (SELECT salary
+				FROM employees e1, departments d1, locations l1
+				WHERE e1.department_id = d1.department_id
+				AND d1.location_id = l1.location_id
+				AND l1.city = 'Toronto');
+
+-- 연봉이 상위 5~10위 사이의 사원명(first_name), 입사일(hire_date), 연봉(salary)을 출력하시오 (Top-N)
+SELECT *
+FROM (SELECT rownum rm, a.*
+		FROM (SELECT first_name, hire_date, salary 
+				FROM employees 
+				ORDER BY salary desc) a
+)
+WHERE 5 <= rm AND rm <= 10;
+
+-- 사원을 관리할 수 있는 사원의 평균 연봉보다 연봉을 많이 받는 사원의 정보를 출력하시오.(상관관계)
+SELECT e.employee_id, e.first_name, e.salary
+FROM employees e
+WHERE salary > (SELECT avg(salary)
+				FROM employees
+				WHERE e.employee_id = manager_id);
+
+-- 자신의 부하직원이 없는 말단 직원들의 정보를 출력하시오(exists, 상관관계)
+SELECT employee_id, first_name, job_id
+FROM employees outer
+WHERE not exists (SELECT '1' 
+					FROM employees 
+					WHERE manager_id = outer.employee_id);
+
 
 
 
