@@ -381,7 +381,200 @@ SELECT * FROM dept01;
 COMMIT
 
 
+====================================================================
+--20170928
 
+CREATE TABLE loc01(
+  locno number(2),
+  locname varchar2(20),
+  constraint loc01_locno_pk primary key(locno)
+  );
+  
+  INSERT INTO loc01
+  VALUES (11,'seoul');
+  
+   INSERT INTO loc01
+  VALUES (22,'jeju');
+  
+   INSERT INTO loc01
+  VALUES (33,'busan');
+  
+SELECT * from loc01;
+
+CREATE TABLE emp09(
+empno number(2) primary key,
+deptno number(2)
+         constraint emp09_deptno_fk
+         references dept01(deptno),
+locno number(2),
+         constraint emp09_locno_fk foreign key(locno)
+         references loc01(locno));
+         
+-- 정상삽입         
+ INSERT INTO emp09
+ VALUES (1,10,11);
+
+ INSERT INTO emp09
+ VALUES (2,20,22);
+
+-- ORA-02291: 무결성 제약조건(HR.EMP09_DEPTNO_FK)이 위배되었습니다- 부모 키가 없습니다
+ INSERT INTO emp09
+ VALUES(3,40,11);
+ 
+ INSERT INTO emp09
+ VALUES(4,30,11);
+-- ORA-02292: 무결성 제약조건(HR.EMP09_DEPTNO_FK)이 위배되었습니다- 자식 레코드가 발견되었습니다
+ DELETE FROM dept01
+ WHERE deptno = 30;
+
+----------------------------------------------------------
+다른 테이블에서 현재 테이블을 참조해서 사용하고 있을 때는 
+제약조건을 제거한 후 현재 테이블의 데이터를 삭제한다.
+----------------------------------------------------------
+
+ALTER TABLE emp09
+DROP CONSTRAINT emp09_deptno_fk;
+
+-- 정상 삭제
+         DELETE FROM dept01
+         WHERE deptno = 30;
+         
+------------------------------------------------------
+자식 테이블에서 부모테이블의 데이터를 참조 하고 있을때 삭제
+1. 자식 테이블의 제약조건을 제거한다.
+2. 부모 테이블의 레코드를 삭제한다.
+3. 자식 테이블의 레코드를 삭제한다.
+4. 자식 테이블의 제약조건을 다시 설정한다.
+------------------------------------------------------
+
+DELETE FROM emp09 WHERE deptno = 30;
+
+--------------------------------------------------------------------------------
+제약조건 
+
+on delete restrict -- dept01테이블의 deptno값이 삭제 못하게함
+on update restrict --dept01테이블의 deptno값이 수정 못하게함
+
+on delete cascade -- dept01테이블의 deptno값이 삭제되면 forgin key 도 삭제
+on update cascade --dept01테이블의 deptno값이 수정되면 forgin key 도 수정
+ 
+on delete set null-- dept01테이블의 deptno값이 삭제되면 forgin key 값은 null 수정
+on update set null--dept01테이블의 deptno값이 수정되면 forgin key 값은 null 수정
+ 
+on delete no action-- dept01테이블의 deptno값이 삭제되어도 아무런동작을 안함
+on update no action --dept01테이블의 deptno값이 수정되어도 아무런 동작을 안함
+
+--------------------------------------------------------------------------------
+
+ALTER TABLE emp09
+ add constraint emp09_deptno_fk foreign key(deptno)
+ 	references dept01(deptno) on delete cascade;
+
+DELETE FROM dept01
+WHERE deptno = 10;
+
+-- 제약조건은 수정이 안되므로 삭제를한다.
+ALTER TABLE emp09
+drop constraint emp09_locno_fk;
+
+
+-- update은 오라클(10g)에서는 할 수 없음. (트리거를 사용해야 한다.)
+ALTER TABLE emp09
+add constraint emp09_locno_fk foreign key(locno)
+	references loc01(locno)
+		on update set null;
+
+
+DROP trigger loc01_tri;
+
+
+-- 콘솔창에 입력 (트리거 생성)
+CREATE OR REPLACE TRIGGER loc01_tri
+AFTER UPDATE ON loc01 FOR EACH ROW
+BEGIN
+		UPDATE emp09
+		SET locno = 88
+		WHERE locno = 44;
+END;
+/
+--
+
+UPDATE loc01 SET locno = 88 WHERE locno = 44;
+
+
+SELECT * FROM emp09;
+SELECT * FROM dept01;
+SELECT * FROM loc01;
+
+ INSERT INTO loc01
+ VALUES(44, 'inchon');
+ 
+ INSERT INTO emp09
+ VALUES(3, 20, 44);
+
+--------------------------------------------------------------------------
+
+ 시퀀스(sequence)
+   테이블 내의 유일한 숫자를 자동으로 생성하는 자동번호 발생이므로 시퀀스를
+   기본 키로 사용하면 사용자의 부담을 줄일 수 있다.
+
+   create sequence 시퀀스명
+     start with  n - 시퀀스 시작번호
+     increment by n  -시퀀스 증가치
+     nocache  - cache는 메모리상의 시퀀스값을 관리하게 하는데 기본값이 20이다.
+              - nocache은 메모리상의 시퀀스를 관리하지 않는다.
+     nocycle  - cycle은 지정된 시퀀스값이 최대값까지 증가를 완료하면 start with
+                옵션에 지정된 시작값에시 다시 시퀀스를 시작한다.
+              - nocycle은  증가가 완료되면 에러를 유발한다.
+
+    maxvalue n; - 시퀀스가 가질수 있는 최대값을 지정한다.
+              maxvalue의 기본값은 ascending일때 1027승, descending 일때 -1이다.
+              
+--------------------------------------------------------------------------
+
+CREATE TABLE emp10(
+	num number,
+	name varchar2(20)
+);
+
+CREATE sequence emp10_num_seq
+	start with 1
+	increment by 1
+	nocache
+	nocycle;
+
+INSERT INTO emp10(num, name)
+VALUES(emp10_num_seq.nextval, 'kim');
+
+DELETE FROM emp10
+WHERE num = 2;
+
+SELECT * FROM emp10;
+
+------------------------------------
+자바에서 사용할 테이블 생성
+------------------------------------
+
+DROP TABLE mem;
+
+CREATE TABLE mem(
+	num number,
+	name varchar2(20),
+	age number(3),
+	loc varchar2(10)
+);
+
+CREATE sequence mem_num_seq
+	start with 1
+	increment by 1
+	nocache
+	nocycle;
+	
+INSERT INTO mem
+VALUES (mem_num_seq.nextval, '홍길동', 30, '서울');
+
+
+SELECT * FROM mem;
 
 
 
