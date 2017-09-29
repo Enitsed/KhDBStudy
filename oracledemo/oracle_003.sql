@@ -578,3 +578,4 @@ SELECT * FROM mem;
 
 SELECT a.* FROM (SELECT rownum rm, e.* FROM EMPLOYEES e ORDER BY EMPLOYEE_ID) a WHERE rm > 30 AND rm <= 35;
 
+SELECT * FROM EMPLOYEES WHERE lower(first_name) LIKE lower('%alex%');
