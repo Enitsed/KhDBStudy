@@ -576,5 +576,5 @@ VALUES (mem_num_seq.nextval, '홍길동', 30, '서울');
 
 SELECT * FROM mem;
 
-
+SELECT a.* FROM (SELECT rownum rm, e.* FROM EMPLOYEES e ORDER BY EMPLOYEE_ID) a WHERE rm > 30 AND rm <= 35;
 
