@@ -423,9 +423,11 @@ sql> show user;
  sql> select * from hr.emp;
  
  [user05 사용자 계정을 생성 및 롤을 이용한 권한부여]
- 
+ sql> con system/a1234
+ sql> create user user05 identified by tiger;
+ sql> grant connect, resources to user05;
+ sql> conn user05/tiger;
  sql> create table mem2(id varchar2(10), name varchar2(50));
- 
  sql> insert into mem2 values('a001', '홍길동');
  sql> select * from mem2;
  
@@ -433,6 +435,8 @@ sql> show user;
  
  
  
+ sql>
+ sql>
  
  
  
