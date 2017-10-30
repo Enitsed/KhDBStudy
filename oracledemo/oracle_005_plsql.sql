@@ -99,4 +99,800 @@ sql>commit;
 sql>select * from emp_test;
 
 
+사용자로부터 변수에 저장할 값을 입력받는다.
+verify
+ - verify가 켜져 있으면(on) 치환변수를 값으로 대체하기 전후의 치환 변수 값을 표시한다.
+ - verify가 꺼져 있으면(off) 치환변수를 값으로 대체하기 전후의 치환 변수 값을 표시 하지 않는다.
+ 
+현재 verify 상태를 검색한다.
+SQL> show verify
+
+verify 상태가 on 일때 실행결과이다.
+SQL> declare
+	v_no number := '&no';
+	v_name varchar2(20) := '&name';
+	begin
+	insert into emp_test
+	values(v_no, v_name);
+	end;
+	/
+
+no의 값을 입력하십시오: 200
+구   2:         v_no number := '&no';
+신   2:         v_no number := '200';
+name의 값을 입력하십시오: bbb
+구   3:         v_name varchar2(20) := '&name';
+신   3:         v_name varchar2(20) := 'bbb';
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+verify상태를 off로 설정한다.
+SQL> set verify off
+
+현재 verify상태를 검색한다.
+SQL> show verify
+
+SQL> declare
+	v_no number := '&no';
+	v_name varchar2(20) := '&name';
+	begin
+	insert into emp_test
+	values(v_no, v_name);
+	end;
+	/
+
+no의 값을 입력하십시오: 300
+name의 값을 입력하십시오: ccc
+
+
+PL/SQL에서 update쿼리를 수행한다.
+SQL> begin
+	update emp_test
+	set name = 'abc'
+	where no = 1;
+end;
+/
+
+SQL> select * from emp_test;
+
+
+PL/SQL에서 delete쿼리를 수행한다.
+SQL> begin
+	delete from emp_test
+	where no = 1;
+	end;
+	/
+
+SQL> select * from emp_test;
+
+
+merge를 수행하기 전에 emp_test2 테이블을 수행한다.
+SQL> create table emp_test2(
+	no number,
+	first varchar2(20),
+	last varchar2(20));
+	
+merge를 수행하기 전에 emp_test2테이블에 데이터를 삽입한다.
+SQL> begin
+	insert into emp_test2
+	values(500, 'baba', 'ko');
+	end;
+	/
+	
+SQL> begin
+	insert into emp_test2
+	values(300, 'chacha', 'pu');
+	end;
+	/
+	
+	
+SQL> select * from emp_test2;
+
+emp_test2테이블에 emp_test테이블을 병합한다.
+SQL> begin
+	merge into emp_test2 e2
+	using emp_test e1
+	on(e1.no = e2.no)
+		when matched then
+		update set
+			e2.first = e1.name
+		when not matched then
+		insert values(e1.no, e1.name, null);
+	end;
+	/
+
+	
+-----------------------------------------------------------
+
+  PL/SQL변수
+  PL/SQL변수	- 단순변수 - 스칼라변수
+			- 참조변수 - %TYPE변수
+					- %ROWTYPE변수
+
+               -  LOB
+               - 복합변수 - RECORD TYPE
+                        - TABLE TYPE
+
+  비 PL/SQL변수 - BIND변수
+
+
+단순변수(SCALAR변수와 Reference변수)
+ SCALAR변수 : 단일 값을 가지는 변수의 데이터 형을 직접 지정해주는 변수이다.
+ Reference변수 : 변수의 데이터 형을 다른 컬럼에서 참조 후 지정하는 방식이다.
+    - %type변수 : 특정 컬럼의 데이터형으로 선언한다.
+    - %rowtype변수 : 여러 컬럼을 한꺼번에 저장할 변수로 선언한다.
+    
+Scalar 변수를 활용한 예제
+SQL> declare
+	num number := 10;
+	name varchar2(20) := 'hong';
+	hire date default sysdate;
+	begin
+		dbms_output.put_line(num || '	' || name || '	' || hire);
+	end;
+    /
+
+
+Reference변수 중 %TYPE변수를 활용한 예제
+SQL> declare
+	num employees.employee_id%type;
+	name employees.first_name%type;
+	hire employees.hire_date%type;
+	begin
+		select employee_id, first_name, hire_date
+		into num, name, hire
+		from employees
+		where employee_id = 100;
+		dbms_output.put_line(num || '	' || name || '	' || hire);
+	end;
+	/
+
+
+Reference변수 중 %TYPE변수를 활용한 예제
+SQL> declare
+	emp employees%rowtype;
+	begin
+		select *
+		into emp
+		from employees
+		where employee_id = 100;
+		dbms_output.put_line(emp.employee_id || '	' || emp.first_name || '	' || emp.hire_date);
+	end;
+	/
+
+%type 변수를 사용하여 employees, departments 테이블을 조인하여 employee_id=100 인 사람의 정보를 4개의 변수에 넣은 후
+employee_id, first_name, department_id, department_name을 가져오는 쿼리를 작성하시오.
+<< 실행결과 >>
+100 Steven 90 Exucutive
+
+SQL> declare
+	id employees.employee_id%type;
+	name employees.first_name%type;
+	department_id departments.department_id%type;
+	department_name departments.department_name%type;
+	begin 
+		select e.employee_id, e.first_name, d.department_id, d.department_name
+		into id, name, department_id, department_name
+		from employees e, departments d
+		where e.department_id = d.department_id and e.employee_id = 100;
+		dbms_output.put_line(id || '	' || name || '	' || department_id || '	' || department_name);
+	end;
+/
+
+두개의 데이터를 입력받아서 합을 구하는 쿼리를 작성하시오.
+<<실행 결과>>
+Enter value for no1: 10
+old 2: v_no1 number : =&no1;
+new 2: v_no1 number : =10;
+Enter value for no2: 20
+old 3: v_no2 number : =&no2;
+new 3: v_no2 number : =20;
+30
+
+SQL> declare
+	v_no1 number := '&no1';
+	v_no2 number := '&no2';
+	v_sum number;
+	begin
+		v_sum := v_no1 + v_no2;
+		dbms_output.put_line(v_sum);
+	end;
+	/
+
+복합변수는 변수 하나 안에 여러가지 다른 유형의 데이터를 포함할 수 있다.
+복합변수는 Record type변수와 Table Type(컬렉션 타입)변수로 나눌 수 있다.
+Record Type변수 내부는 여러가지 유형의 데이터 형태로 정의한다.
+Table Type변수는 한가지 유형의 데이터 형태가 정의된다.
+주로 동일한 데이터 타입의 여러건의 데이터를 저장하고 싶을 경우 Table Type(컬렉션 타입)을 사용하고
+다른 유형의 데이터 타입을 사용할 경우 레코드 타입의 변수를 사용한다.
+
+record type변수를 활용한 예제
+SQL> declare
+	-- Record Type을 정의한다.
+	type emp_record_type is record
+	(
+		emp_id employees.employee_id%type,
+		emp_name employees.first_name%type,
+		emp_salary employees.salary%type,
+		emp_hire employees.hire_date%type
+	);
+	-- Record Type의 변수를 선언한다.
+	v_emp emp_record_type;
+	BEGIN
+		select employee_id, first_name, salary, hire_date
+		into v_emp
+		from employees
+		where employee_id = 100;
+		
+		dbms_output.put_line(v_emp.emp_id || '	' || v_emp.emp_name || '	' || v_emp.emp_salary || '	' || v_emp.emp_hire);
+	END;
+	/
+
+
+record type 변수를 활용하여 부서번호가 30번인 부서의 부서번호와 부서명과 도시명을 record type변수에 저장한 후 출력하시오.
+(단, record type데이터 타입명은 dept_record_type으로 한다.)
+<< 실행결과 >>
+30	Purchasing	Seattle
+
+SQL> declare
+	type dept_record_type is record
+	(
+		dept_id departments.department_id%type,
+		dept_name departments.department_name%type,
+		city locations.city%type
+	);
+	v_dept dept_record_type;
+	begin
+		select d.department_id, d.department_name, l.city
+		into v_dept
+		from departments d, locations l
+		where d.location_id = l.location_id and d.department_id = 30;
+		
+		dbms_output.put_line(v_dept.dept_id || '	' || v_dept.dept_name || '	' || v_dept.city);
+	end;
+	/
+	
+record type 변수를 활용하여 employees 테이블을 사용하여 사용자로부터 사원번호를 입력 받은 후 employee_id, first_name, hire_date, salary를 출력하시오.
+(단, record type데이터 타입명은 sawon_record_type으로 한다.)
+<< 실행결과 >>
+emp_id의 값을 입력하십시오: 100
+구   4:                 emp_id employees.employee_id%type := '&emp_id',
+신   4:                 emp_id employees.employee_id%type := '100',
+100     Steven  87/06/17        24000
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+SQL> declare
+	type sawon_record_type is record
+	(
+		emp_id employees.employee_id%type,
+		first_name employees.first_name%type,
+		hire_date employees.hire_date%type,
+		salary employees.salary%type
+	);
+	sawon sawon_record_type;
+	v_input employees.employee_id%type := '&v_input';
+	begin
+		select employee_id, first_name, hire_date, salary
+		into sawon
+		from employees
+		where employee_id = v_input;
+		dbms_output.put_line('사원번호 : ' || sawon.emp_id );
+		dbms_output.put_line('사원명 : ' || sawon.first_name );
+		dbms_output.put_line('입사일 : ' || sawon.hire_date);
+		dbms_output.put_line('연봉 : ' || sawon.salary );
+	end;
+	/
+
+복합변수의 Table Type변수
+	Table Type 변수는 Record Type과 같이 여러가지 유형의 데이터 칼럼을 가질 수도 있다.
+	TABLE 타입은 TABLE을 색인 하는데 사용되는 BINARY_INTEGER 데이터 타입의 Primary Key와
+	TABLE 요소를 저장하는 Scalar 데이터 타입의 두 가지 구성요소를 갖고 있어야 합니다.
+[형식]
+TYPE [type명] IS TABLE OF
+column_type or variable%TYPE or 테이블명.컬럼명%TYPE
+INDEX BY BINARY_INTEGER;
+
+SQL> declare
+	t_name varchar2(20);
+	
+	type tbl_emp_name is table of
+	employees.first_name%type
+	index by binary_integer;
+	
+	v_name tbl_emp_name;
+	i binary_integer := 0;
+	
+	begin 
+		select first_name into t_name
+		from employees
+		where employee_id = 100;
+		
+		v_name(i) := t_name;
+		dbms_output.put_line(v_name(i));
+	end;
+	/
+	
+for 반복문을 사용하여 변수에 여러 건의 데이터를 입력하는 방법이다.
+SQL> declare
+	type name_table_type is table of
+	employees.first_name%type
+	index by binary_integer;
+	v_name name_table_type;
+	num binary_integer := 0;
+	begin
+		for i in(select first_name from employees) loop
+			num := num+1;
+			v_name(num) := i.first_name;
+		end loop;
+		for j in 1..num loop
+		dbms_output.put_line(v_name(j));
+		end loop;
+	end;
+	/
+
+SQL> declare
+	type name_table_type is table of employees%rowtype
+	index by binary_integer;
+	v_list name_table_type;
+	num binary_integer := 0;
+	begin
+		for itemList in(select * from employees) loop
+			num := num+1;
+			v_list(num).employee_id := itemList.employee_id;
+			v_list(num).first_name := itemList.first_name;
+			v_list(num).salary := itemList.salary;
+		end loop;
+		for j in 1..num loop
+			dbms_output.put_line(v_list(j).employee_id || '	' || v_list(j).first_name || '	' ||v_list(j).salary);
+		end loop;
+	end;
+	/
+
+	
+	
+SQL> declare
+	type name_table_rec is record(
+	--v_id employees.employee_id%type
+	v_id number,
+	--v_name employees.first_name%type
+	v_name varchar2(20),
+	--v_salary employees.salary%type
+	v_salary number
+	);
+type name_table_type is table of name_table_rec
+index by binary_integer;
+
+v_list name_table_type;
+num binary_integer := 0;
+begin
+	for itemList in(select employee_id, first_name, salary from employees) loop
+		num := num+1;
+		v_list(num).v_id := itemList.employee_id;
+		v_list(num).v_name := itemList.first_name;
+		v_list(num).v_salary := itemList.salary;
+	end loop;
+	for j in 1..num loop
+		dbms_output.put_line(v_list(j).v_id || '	' || v_list(j).v_name || '	' ||v_list(j).v_salary);
+	end loop;
+end;
+/
+
+비 PL/SQL변수(바인드 변수)
+바인드 변수는 호스트 환경에서 생성되어 데이터를 저장하므로 호스트 변수라 한다.
+Variable키워드를 사용하여 생성되며 SQL문과 PL/SQL블록에서 사용된다.
+print키워드를 사용해서 바인드변수에 저장된 값을 출력한다.
+
+-- 바인드 변수로 사용할 변수를 사용한다.
+SQL> variable v_bind number;
+
+SQL> begin
+	select salary into :v_bind
+	from employees
+	where employee_id = 100;
+	end;
+	/
+
+-- 바인드 변수에 담긴 값을 출력한다.
+
+SQL> print v_bind;
+
+    V_BIND
+----------
+     24000
+
+/*pl_sql문을 편집/수정 하기위해서 edit 명령문을 실행한다.
+SQL> edit c:/testsql/sample
+
+c:드라이브 testsql 폴더에 저장된 파일
+SQL> @c:/testsql/sample
+ */
+
+
+PL/SQL 제어문
+ : 조건문은 if문과 case문이 있다.
+   반복문은 case loop문과 while문이 있다.
+if~then~end if
+
+IF condition THEN
+      statements;
+END if;
+
+sql> edit c:/testsql/if01
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vdeptno employees.department_id%type;
+	vdname varchar2(20);
+	
+	begin
+		select employee_id, first_name, department_id
+		into vempno, vname, vdeptno
+		from employees
+		where employee_id = 200;
+		
+		if vdeptno = 10 then
+		vdname := 'ACCOUNT';
+		end if;
+		
+		if vdeptno = 20 then
+		vdname := 'RESEARCH';
+		end if;
+		
+		if vdeptno = 30 then
+		vdname := 'SALES';
+		end if;
+		
+		if vdeptno = 40 then
+		vdname := 'OPERATIONS';
+		end if;
+		
+		dbms_output.put_line(vempno || '	' || vname || '	' || vdeptno || '	' || vdname);
+	end;
+	/
+
+SQL> @c:/testsql/if01
+200     Jennifer        10      ACCOUNT
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+sql> edit c:/testsql/if02
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vcomm employees.commission_pct%type;
+	vsalary number(10, 2);
+	
+	begin
+		select employee_id, first_name, commission_pct, salary
+		into vempno, vname, vcomm, vsalary
+		from employees
+		where employee_id = 145;
+		
+		if vcomm > 0 then
+			vsalary := vsalary + vcomm;
+		else
+			vsalary := vsalary + 0;
+	end if;
+	
+	dbms_output.put_line(vempno || '	' || vcomm || '	' || vsalary);
+end;
+/
+
+SQL> @c:/testsql/if02
+145     .4      14000.4
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+------------------------------------------
+
+if 조건식 then
+ 문장;
+ elsif 조건식 then
+ 문장;
+ elsif 조건식 then
+ 문장;
+ else
+ 문장;
+end if;
+
+------------------------------------------
+
+sql> edit c:/testsql/if03
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vdeptno employees.department_id%type;
+	vdname varchar2(20);
+	
+	begin
+		select employee_id, first_name, department_id
+		into vempno, vname, vdeptno
+		from employees
+		where employee_id = 100;
+		
+		if vdeptno = 10 then
+		vdname := 'ACCOUNT';
+		elsif vdeptno = 20 then
+		vdname := 'RESEARCH';
+		elsif vdeptno = 30 then
+		vdname := 'SALES';
+		elsif vdeptno = 40 then
+		vdname := 'OPERATIONS';
+		else
+		vdname := 'other';
+		end if;
+		
+		dbms_output.put_line(vempno || '	' || vname || '	' || vdeptno || '	' || vdname);
+	end;
+	/
+
+SQL> @c:/testsql/if03
+100     Steven  90      other
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+------------------------------------------
+
+CASE
+	WHEN condition1 THEN result1
+	WHEN condition1 THEN result1
+	ELSE default
+END CASE;
+
+------------------------------------------
+
+sql> edit c:/testsql/case01
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vdeptno employees.department_id%type;
+	vdname varchar2(20);
+	
+	begin
+		select employee_id, first_name, department_id
+		into vempno, vname, vdeptno
+		from employees
+		where employee_id = 100;
+		
+		CASE 
+		when vdeptno = 10 then
+		vdname := 'ACCOUNT';
+		when vdeptno = 20 then
+		vdname := 'RESEARCH';
+		when vdeptno = 30 then
+		vdname := 'SALES';
+		when vdeptno = 40 then
+		vdname := 'OPERATIONS';
+		else
+		vdname := 'other';
+		end case;
+		
+		dbms_output.put_line(vempno || '	' || vname || '	' || vdeptno || '	' || vdname);
+	end;
+	/
+
+SQL> @c:/testsql/case01
+100     Steven  90      other
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+sql> edit c:/testsql/case02
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vdeptno employees.department_id%type;
+	vdname varchar2(20);
+	
+	begin
+		select employee_id, first_name, department_id
+		into vempno, vname, vdeptno
+		from employees
+		where employee_id = 100;
+		
+		vdname := case
+		when vdeptno = 10 then	'ACCOUNT'
+		when vdeptno = 20 then	'RESEARCH'
+		when vdeptno = 30 then	'SALES'
+		when vdeptno = 40 then	'OPERATIONS'
+		else	'other'
+		end;
+		
+		dbms_output.put_line(vempno || '	' || vname || '	' || vdeptno || '	' || vdname);
+	end;
+	/
+	
+SQL> @c:/testsql/case02
+100     Steven  90      other
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+sql> edit c:/testsql/case03
+
+declare
+	vempno employees.employee_id%type;
+	vname employees.first_name%type;
+	vdeptno employees.department_id%type;
+	vdname varchar2(20);
+	
+	begin
+		select employee_id, first_name, department_id
+		into vempno, vname, vdeptno
+		from employees
+		where employee_id = 100;
+		
+		vdname := case vdeptno
+		when 10 then	'ACCOUNT'
+		when 20 then	'RESEARCH'
+		when 30 then	'SALES'
+		when 40 then	'OPERATIONS'
+		else	'other'
+		end;
+		
+		dbms_output.put_line(vempno || '	' || vname || '	' || vdeptno || '	' || vdname);
+	end;
+	/
+	
+
+SQL> @c:/testsql/case03
+100     Steven  90      other
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+--------------------------------------------------
+LOOP
+	statement;
+	EXIT [WHERE condition];
+END LOOP;
+
+--------------------------------------------------
+
+sql> edit c:/testsql/loop01
+
+declare
+	num number := 1;
+begin 
+	loop
+		dbms_output.put_line(num);
+		num := num +1;
+		exit when num >5;
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/loop01
+1
+2
+3
+4
+5
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+sql> edit c:/testsql/loop02
+
+declare
+	num number := 1;
+begin 
+	loop
+		dbms_output.put_line(num);
+		num := num +1;
+		if num >5 then
+			exit;
+		end if;
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/loop02
+1
+2
+3
+4
+5
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+--------------------------------------------------
+
+WHEN condition LOOP
+	statement;
+END LOOP;
+
+--------------------------------------------------
+
+sql> edit c:/testsql/loop03
+
+declare
+	num number := 1;
+begin 
+	while num < 6 loop
+		dbms_output.put_line(num);
+		num := num +1;
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/loop03
+1
+2
+3
+4
+5
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+--------------------------------------------------
+
+FOR counter IN [REVERSE] start..end loop
+	statement;
+END loop;
+
+--------------------------------------------------
+
+sql> edit c:/testsql/loop04
+
+begin
+	for i IN 1..5 loop
+		dbms_output.put_line(i);
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/loop04
+1
+2
+3
+4
+5
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+단을 사용자로부터 입력받아 for문을 이용해서 구구단을 출력하는 문장을 구현하시오.
+
+
+sql> edit c:/testsql/loop05
+
+declare
+	input number := '&num';
+begin
+	for i IN 1..9 loop
+		dbms_output.put_line(input || '*' || i || '=' || i * input);
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/loop05
+num의 값을 입력하십시오: 5
+구   2:         input number := '&num';
+신   2:         input number := '5';
+5*1=5
+5*2=10
+5*3=15
+5*4=20
+5*5=25
+5*6=30
+5*7=35
+5*8=40
+5*9=45
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+
+
 
