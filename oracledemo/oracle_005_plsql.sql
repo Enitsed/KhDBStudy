@@ -891,6 +891,517 @@ num의 값을 입력하십시오: 5
 
 PL/SQL 처리가 정상적으로 완료되었습니다.
 
+부서번호를 입력받아 부서에 해당하는 사원번호, 사원명(first_name), 연봉, 부서번호를 출력하는 문장을 구현하시오.
+
+declare
+   vdmt number := '&dmt';
+   type rec_emp_type is record(
+	v_empid employees.employee_id%type,
+	v_name employees.first_name%type,
+	v_salary employees.salary%type,
+	v_deptid employees.department_id%type
+   );
+   type tbl_emp_type is table of rec_emp_type index by binary_integer;
+   emp_list tbl_emp_type;
+   i binary_integer := 0;
+   
+   begin
+      for data_list in(select employee_id, first_name, salary, department_id from employees where department_id = vdmt) loop
+         i := i+1;
+         emp_list(i).v_empid := data_list.employee_id;
+         emp_list(i).v_name := data_list.first_name;
+         emp_list(i).v_salary := data_list.salary;
+         emp_list(i).v_deptid := data_list.department_id;
+      
+      dbms_output.put_line(emp_list(i).v_empid || '  ' ||
+							emp_list(i).v_name || '  ' ||
+							emp_list(i).v_salary || '  ' ||
+							emp_list(i).v_deptid );
+      end loop;
+   end;
+   /
+   
+[실행결과]
+
+SQL> @c:/testsql/loop06
+dmt의 값을 입력하십시오: 100
+구   2:    vdmt number := '&dmt';
+신   2:    vdmt number := '100';
+108  Nancy  12000  100
+109  Daniel  9000  100
+110  John  8200  100
+111  Ismael  7700  100
+112  Jose Manuel  7800  100
+113  Luis  6900  100
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+[저장 프로시저(Stored Procedure)]
+pl/sql문을 데이터베이스에 저장할 수 있도록 저장 프로시저를 제공한다.
+특정한 처리를 수행하는 pl/sql 서브 프로그램이다. 파라미터를 받아서 특정 작업을 수행한다.
+
+CREATE OR REPLACE PROCEDURE name
+	IN argument
+	OUT argument
+	IN OUT argument
+	
+IS
+
+	[변수의 선언]
+	
+BEGIN --> 필수
+
+	[PL/SQL BLOCK]
+	-- SQL문장, PL/SQL제어 문장
+
+	[EXCEPTION] --> 선택
+	--error가 발생할 때 수행하는 문장
+	
+END; --> 필수
+/
+
+SQL> edit C:/testsql/proce01
+CREATE OR REPLACE PROCEDURE greetings
+AS
+	BEGIN
+		dbms_output.put_line('Hello World!');
+	END;
+/
+
+SQL> @C:/testsql/proce01 -- 프로시저 생성
+SQL> execute greetings -- 프로시저 실행
+Hello World!
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+SQL> edit C:/testsql/proce02
+CREATE OR REPLACE PROCEDURE greetings2
+AS
+	BEGIN
+		dbms_output.put_lin('Hello World!'); -- 일부러 오타 생성
+	END;
+/
+
+SQL> @c:/testsql/proce02
+경고: 컴파일 오류와 함께 프로시저가 생성되었습니다.
+
+-- 컴파일 오류 메세지 확인
+SQL> show error;
+PROCEDURE GREETINGS2에 대한 오류:
+LINE/COL ERROR
+-------- -----------------------------------------------------------------
+4/3      PL/SQL: Statement ignored
+4/15     PLS-00302: 'PUT_LIN' 구성 요소가 정의되어야 합니다
+
+-- 사용자가 정의한 소스 저장을 확인하기 위해 user_source 구조 확인
+SQL> desc user_source
+ 이름                                      널?      유형
+ ----------------------------------------- -------- ----------------------------
+
+ NAME                                               VARCHAR2(30)
+ TYPE                                               VARCHAR2(12)
+ LINE                                               NUMBER
+ TEXT                                               VARCHAR2(4000)
+ 
+ -- 저장 프로시저 확인
+ sql> select name, text from user_source;
+
+
+SQL> edit c:/testsql/proc03_inmode
+create or replace procedure proc03_inmode
+(v_empid in emp.employee_id%type) -- 값을 받아들임
+is
+begin
+	update emp
+	set salary = salary * 1.5
+	where employee_id = v_empid;
+end;
+/
+SQL> @c:/testsql/proc03_inmode
+
+프로시저가 생성되었습니다.
+SQL> execute proc03_inmode(200) -- 값을 입력함
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+SQL> select employee_id, salary from employees where employee_id=200;
+
+EMPLOYEE_ID     SALARY
+----------- ----------
+        200       4400
+
+SQL> select * from emp where employee_id = 200;
+
+EMPLOYEE_ID FIRST_NAME                                   SALARY
+----------- ---------------------------------------- ----------
+        200 Jennifer                                       6600
+
+SQL> edit c:/testsql/proc04_outmode
+
+create or replace procedure proc04_outmode
+(
+	v_id in employees.employee_id%type, -- 값은 받아들임
+	v_name out employees.first_name%type, -- 값을 내보냄
+	v_salary out employees.salary%type, -- 값을 내보냄
+	v_avg_salary out employees.salary%type, -- 값을 내보냄
+	v_deptname out departments.department_name%type -- 값을 내보냄
+)
+is
+	v_deptid number;
+begin
+	select first_name, salary, department_id
+	into v_name, v_salary, v_deptid
+	from employees
+	-- 사원번호가 받아들인 값과 같은 사람의 ename, sal, deptno를 추출
+	where employee_id=v_id;
+	select d.department_name, a.avg_sal
+	-- 선택한 사원이 속한 부서의 평균 salary와 부서명 추출
+	into v_deptname, v_avg_salary
+	from departments d,
+		(select round(avg(salary)) avg_sal from employees where department_id = v_deptid) a
+		where d.department_id = v_deptid;
+end;
+/
+
+SQL> @c:/testsql/proc04_outmode
+프로시저가 생성되었습니다.
+-- 출력될 변수 선언
+SQL> variable g_name varchar2(20)
+SQL> variable g_salary number
+SQL> variable g_avg number
+SQL> variable g_deptname varchar2(20)
+
+SQL> execute proc04_outmode(200,:g_name,:g_salary,:g_avg,:g_deptname)
+
+-- 프로시저 실행 후 바인드된 변수 출력
+SQL> print g_name
+G_NAME
+------------------
+Jennifer
+
+SQL> print g_salary
+  G_SALARY
+----------
+      4400
+
+SQL> print g_avg
+     G_AVG
+----------
+      4400
+
+SQL> print g_deptname
+G_DEPTNAME
+-------------------------
+Administration
+
+
+
+
+SQL> edit c:/testsql/proc05_inoutmode
+
+create or replace procedure proc05_inoutmode
+	(v_salary in out varchar2)
+	is
+begin
+	-- 외부 변수로부터 값을 받아들여 이 양식에 맞게 다시 내보냄
+	v_salary := '$' || SUBSTR(v_salary, -9, 3) || ',' || SUBSTR(v_salary, -6, 3) || ',' || SUBSTR(v_salary, -3, 3);
+end;
+/
+
+SQL> @c:/testsql/proc05_inoutmode
+프로시저가 생성되었습니다.
+
+-- // 외부변수 선언
+SQL> variable g_salary varchar2(20)
+SQL> begin
+  2     :g_salary:= '123456789';
+  3  end;
+  4  /
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+SQL> print g_salary
+G_SALARY
+------------------------------------------------
+123456789
+
+SQL> execute proc05_inoutmode(:g_salary)
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+SQL> print g_salary
+G_SALARY
+--------------------------------------------------
+$123,456,789
+
+SQL> edit c:/testsql/proc06_othermode
+create or replace procedure proc06_othermode
+(v_name in mem.name%type default '홍길동',
+v_location in mem.loc%type default '서울')
+is
+
+begin
+	insert into mem
+	values(mem_num_seq.nextval, v_name, 40, v_location);
+end;
+/
+
+SQL> @c:/testsql/proc06_othermode
+프로시저가 생성되었습니다.
+
+SQL> execute proc06_othermode
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+SQL> select * from mem;
+
+	NUM		NAME	AGE		LOC
+	1		윤아		30		서울
+	5		홍길동	40		서울
+	2		조윤희	35		경기
+	NUM		NAME	AGE		LOC
+	3		야옹이	21		부산
+	4		야옹이	40		부산
+
+SQL> begin
+	--매개변수로 아무런 값도 안넣을때 디폴트 값이 들어감
+  2  proc06_othermode;
+  -- 각각 v_name, v_location 변수에 저장
+  3  proc06_othermode('박재미', '경기');
+  -- v_name에 '돌돌이' 값이 저장되고 v_location변수에는 티폴트값이 저장
+  4  proc06_othermode(v_name => '돌돌이');
+  5  end;
+  6  /
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+SQL> select * from mem order by num;
+
+	NUM		NAME		AGE		LOC
+---------- ---------------------------------------- ----------
+	1		윤아			30		서울
+	2		조윤희		35		경기
+	3		야옹이		21		부산
+	4		야옹이		40		부산
+	5		홍길동		40		서울
+	6		홍길동		40		서울
+	7		박재미		40		경기
+	8		돌돌이		40		서울
+
+SQL> execute proc06_othermode(v_location=>'제주');
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+SQL> select * from mem order by num;
+	NUM		NAME		AGE		LOC
+---------- ---------------------------------------- ----------
+	1		윤아			30		서울
+	2		조윤희		35		경기
+	3		야옹이		21		부산
+	4		야옹이		40		부산
+	5		홍길동		40		서울
+	6		홍길동		40		서울
+	7		박재미		40		경기
+	8		돌돌이		40		서울
+	9		홍길동		40		제주
+
+	
+	
+[사용자 정의 함수(Stored Function)]
+사용자가 만든 함수이며 어떤 연산을 수행한 뒤 결과 값을 반환한다.
+SQL> edit c:/testsql/func01
+create or replace function func01
+	(v_deptid in employees.department_id%type)
+	return char
+is
+	v_deptname departments.department_name%type;
+begin
+	select department_name into v_deptname
+	from departments
+	where department_id = v_deptid;
+	return(v_deptname);
+end;
+/
+
+SQL> @ c:/testsql/func01
+함수가 생성되었습니다.
+
+SQL> select employee_id, first_name, func01(department_id) from employees;
+	EMPLOYEE_ID		FIRST_NAME	FUNC01(DEPARTMENT_ID)
+-----------------------------------------------------------------------------
+	205				Shelley		Accounting
+	206				William		Accounting
+
+1. Procedure는 Return값이 없어도 되지만, Function은 Return값이 반드시 존재한다.
+(Procedure는 Return값이 없거나 2개 이상일 수도 있지만, Function은 반드시 1개의 Return 값이 존재한다.)
+2. Function은 Select문에서 호출이 가능하지만, Procedure는 Select문에서 호출이 불가능하다.
+
+-------------------------------------------------------------------------------------------
+
+[PL/SQL Cursor(커서)]
+select문의 수행 결과가 여러개의 로우(레코드)로 구해지는 경우에 모든 로우에 대해 어떤 처리를 하고싶을때 사용한다.
+오라클 서버에서는 SQL문을 실행할 때마다 처리(Execution)를 위한 메모리공간을 SQL커서라고 한다.
+즉 사용자가 요청하는 데이터를 데이터베이스 버퍼 캐시에서 커서로 복사해 온 후 커서에서 원하는 데이터를
+추출하여(Fetch) 후속 작업을 한다는 뜻이다.
+커서는 cursor, open, fetch, close 4단계 명령에 의해서 사용된다.
+DECLARE
+  CURSOR cursor_name IS statement;  -- 커서선언[select문]
+BEGIN
+  OPEN cursor_name;  -- 커서열기
+                                      [LOOP]
+  FETCH cursor_name INTO variable_name; --커서로부터 데이터를 읽어와 변수에 저장
+                                      [END LOOP;]
+                                           
+  CLOSE cursor_name; --커서닫기
+END;
+
+커서의 상태
+커서이름%NOTFOUND : 커서 영역의 자료가 모두 FETCH 돼었다면 TRUE
+커서이름%FOUND : 커서 영역에 FETCH되지 않은 자료가 있다면 TRUE
+커서이름%ISOPEN : 커서가 OPEN된 상태이면 TRUE
+커서이름%ROWCOUNT : 커서가 얻어 온 레코드의 갯수
+
+커서에는 명시적커서와 묵시적 커서 두가지 유형이 있다.
+
+명시적 커서는 사용자가 선언하여 생성후 사용하는 SQL커서로, 주로 여러 개의 행을
+처리하고자 할 경우 사용한다. 만약 여러건을 검색하는  SELECT문장의 경우 묵시적 커서를
+사용할 경우 오라클은 예외사항(TOO_MANY_ROWS)을 발생하게 된다.
+명시적 커서는 묵시적 커서와는 다르게 동시에 여러 개가 선언되어 사용될 수 있다.
+또한 묵시적 커서와 마찬가지로 커서 속성 변수로 커서의 내용을 파악하고 보다 쉽게 작업할수 있게해준다.
+명시적 커서는 여러 개가 선언될 수 있으므로, 커서 속성 변수는 '커서명%'을 커서 속성 변수의 접두어로
+붙여서 사용된다.   
+
+SQL> edit c:/testsql/cursor01
+
+declare
+vempno number;
+vename varchar2(20);
+vsal number(7);
+	-- cs라는 이름의 명시적 커서를 선언한다.
+	-- 이 커서가 open될때 마치 view처럼 서브쿼리가 수행된다.
+cursor cs is
+	select employee_id, first_name, salary
+	from employees
+	where department_id = 20;
+
+begin
+	open cs; -- 커서를 열기한다.
+		loop
+			fetch cs into vempno, vename, vsal;
+			exit when cs%notfound;
+			dbms_output.put_line(vempno || '	' || vename || '	' || vsal);
+		end loop;
+	close cs; -- 커서는 닫기 한다.
+end;
+/
+
+SQL> @c:/testsql/cursor01
+201	Michael	13000
+202	Pat	6000
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+SQL> edit c:/testsql/cursor02
+declare
+-- 커서를 선언한다.
+cursor emp_cur is
+	select employee_id, first_name, salary
+	from employees
+	where department_id = 20;
+begin
+	--커서의 데이터를 저장할 emp_rec변수를 선언한다.
+	for emp_rec in emp_cur loop
+	dbms_output.put_line(emp_rec.employee_id || '	' || emp_rec.first_name || '	' || emp_rec.salary);
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/cursor02
+201	Michael	13000
+202	Pat	6000
+
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+SQL> edit c:/testsql/cursor03
+declare
+-- 변수 선언
+vemp employees%rowtype;
+
+-- 커서를 선언한다.
+cursor emp_cur is
+	select employee_id, first_name, salary
+	from employees
+	where department_id = 20;
+begin
+	--커서의 데이터를 저장할 emp_rec변수를 선언한다.
+	for vemp in emp_cur loop
+	dbms_output.put_line(vemp.employee_id || '	' || vemp.first_name || '	' || vemp.salary);
+	end loop;
+end;
+/
+
+SQL> @c:/testsql/cursor03
+201     Michael 13000
+202     Pat     6000
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+묵시적 커서
+묵시적 커서(implicit cursor)란 오라클 내부에서 각각의 쿼리 결과에 접근하여 사용하기 위한 내부적 커서.
+묵시적 커서를 사용할 경우 'SQL'이라는 이름로 속성에 접근.
+
+SQL> edit c:/testsql/cursor04
+
+declare
+	count1 number;
+	count2 number;
+begin
+	select count(*)
+	into count1
+	from employees
+	where department_id = 20;
+	
+	--%notfound와 기능이 유사한 %rowcount란 기능도 존재한다.
+	--%rowcount : 카운터(counter)역할.
+	-- 커서가 막 오픈되었을 때는 0이고 fetch 될때마다 1씩 증가됨.
+	count2 := SQL%rowcount;
+	dbms_output.put_line('select count is ' || count1);
+	dbms_output.put_line('row count is ' || count2);
+end;
+/
+
+SQL> @c:/testsql/cursor04
+select count is 2
+row count is 1
+PL/SQL 처리가 정상적으로 완료되었습니다.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

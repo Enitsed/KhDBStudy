@@ -431,16 +431,3 @@ sql> show user;
  sql> insert into mem2 values('a001', '홍길동');
  sql> select * from mem2;
  
- 
- 
- 
- 
- sql>
- sql>
- 
- 
- 
- 
- 
- 
- 
